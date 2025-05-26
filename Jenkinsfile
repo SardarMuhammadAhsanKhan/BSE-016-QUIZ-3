@@ -1,43 +1,43 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'JDK-17'
+    // Let users specify the Roman numeral when they kick off the build
+    parameters {
+        string(name: 'ROMAN', defaultValue: 'XIV', description: 'Roman numeral to convert')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Pull your repository
+                // clone/pull your Jenkins-configured repo
                 checkout scm
             }
         }
 
-        stage('Compile') {
+        stage('Convert Roman → Integer') {
             steps {
-                // Compile with javac
-                bat 'javac BloodDonationSystem.java'
-            }
-        }
-
-        stage('Run') {
-            steps {
-                // Run your main class
-                bat 'java BloodDonationSystem'
+                // Run the Python script and redirect output to a file
+                // On a Windows agent, use 'bat'
+                bat """
+                    echo Converting %ROMAN% ...
+                    python Converting_Roman_to_Integer.py %ROMAN% > conversion_result.txt
+                    type conversion_result.txt
+                """
             }
         }
     }
 
     post {
         always {
-            // Archive the compiled .class files
-            archiveArtifacts artifacts: '*.class', fingerprint: true
+            // Archive the result so you can download it from the Jenkins UI
+            archiveArtifacts artifacts: 'conversion_result.txt', fingerprint: true
         }
         success {
-            echo '✅ Build and run succeeded under JDK 17 on Windows!'
+            echo "✅ Conversion succeeded: see conversion_result.txt"
         }
         failure {
-            echo '🚨 Build or run failed—check the console output for errors.'
+            echo "🚨 Conversion failed—check the console output for errors."
         }
     }
 }
+
